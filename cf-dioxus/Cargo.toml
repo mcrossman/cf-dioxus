@@ -15,7 +15,7 @@ web-sys = { version = "0.3", features = ["Location", "Window"], optional = true}
 
 # Dependencies for `server-fn` feature
 server_fn = { version = "0.8", features = ["browser"], optional = true }
-server_fn_macro_default = { version = "0.8", features = ["axum", "ssr"], optional = true }
+server_fn_macro_default = { version = "0.8", optional = true }
 
 [features]
 default = ["web"]
@@ -23,4 +23,7 @@ web = ["dioxus/web"]
 desktop = ["dioxus/desktop"]
 mobile = ["dioxus/mobile"]
 api = ["dep:reqwest", "dep:serde", "dep:serde_urlencoded", "dep:web-sys"]
+# server-fn enables server functions for browser/client-side usage
 server-fn = ["dep:server_fn", "dep:server_fn_macro_default"]
+# server-fn-ssr enables server functions with SSR/Axum backend (for worker builds)
+server-fn-ssr = ["dep:server_fn", "dep:server_fn_macro_default", "server_fn_macro_default/axum", "server_fn_macro_default/ssr"]

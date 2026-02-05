@@ -77,10 +77,7 @@ fn Home() -> Element {
     };
 
     rsx! {
-        div {
-            display: "flex",
-            flex: "1 1 auto",
-            justify_content: "center",
+        div { display: "flex", flex: "1 1 auto", justify_content: "center",
             div {
                 display: "grid",
                 grid_template_columns: "2cm 50px 2cm 4cm",
@@ -90,52 +87,51 @@ fn Home() -> Element {
                 // Top row
                 div {
                     button {
-                        onclick: move |_| { factor1 += 1; },
+                        onclick: move |_| {
+                            factor1 += 1;
+                        },
                         "+"
                     }
                 }
                 div {}
                 div {
                     button {
-                        onclick: move |_| { factor2 += 1; },
+                        onclick: move |_| {
+                            factor2 += 1;
+                        },
                         "+"
                     }
                 }
                 div {}
 
                 // Middle row
-                div {
-                    "{factor1}"
-                }
-                div {
-                    dangerous_inner_html: "&times;"
-                }
-                div {
-                    "{factor2}"
-                }
-                div {
-                    opacity: "{opacity}",
-                    "{answer}"
-                }
+                div { "{factor1}" }
+                div { dangerous_inner_html: "&times;" }
+                div { "{factor2}" }
+                div { opacity: "{opacity}", "{answer}" }
 
                 // Bottom row
                 div {
                     button {
-                        onclick: move |_| { factor1 -= 1; },
+                        onclick: move |_| {
+                            factor1 -= 1;
+                        },
                         "-"
                     }
                 }
                 div {}
                 div {
                     button {
-                        onclick: move |_| { factor2 -= 1; },
+                        onclick: move |_| {
+                            factor2 -= 1;
+                        },
                         "-"
                     }
                 }
                 div {}
             }
-
-         }
+        
+        }
     }
 }
 
@@ -178,7 +174,7 @@ pub mod api {
     }
 }
 
-#[cfg(feature = "server-fn")]
+#[cfg(feature = "server-fn-ssr")]
 pub mod server_function {
     use server_fn::ServerFnError;
     use server_fn_macro_default::server;
