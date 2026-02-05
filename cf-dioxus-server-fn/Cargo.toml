@@ -16,6 +16,7 @@ cf-dioxus = { path = "../cf-dioxus", default-features = false, features = ["serv
 console_error_panic_hook = { version = "0.1.7" }
 server_fn = { version = "0.8", features = ["axum-no-default"] }
 server_fn_macro_default = { version = "0.8", features = ["axum", "ssr"] }
+tokio = { version = "1.0", features = ["sync", "rt"] }
 tower-service = "0.3.3"
 worker = { version = "0.7", features = ['http', 'axum'] }
 worker-macros = { version = "0.7", features = ['http'] }

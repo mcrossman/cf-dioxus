@@ -1,8 +1,11 @@
-use std::sync::LazyLock;
+use std::sync::{Arc, LazyLock};
 
 use axum::{http, routing, Extension};
 use tower_service::Service as _;
 use worker::{console_error, console_log, event, Context, Env};
+
+mod cookies;
+pub use cookies::{RequestCookies, ResponseCookies, ResponseCookie};
 
 mod wasm_workaround {
     extern "C" {
@@ -30,9 +33,33 @@ async fn fetch(
     env: Env,
     _ctx: Context,
 ) -> worker::Result<http::Response<axum::body::Body>> {
+    // Extract request cookies and pass as extension
+    let cookie_header = req.headers().get(http::header::COOKIE)
+        .and_then(|h| h.to_str().ok());
+    let request_cookies = RequestCookies::from_cookie_header(cookie_header);
+    req.extensions_mut().insert(request_cookies);
+
+    // Create a shared mutable container for response cookies
+    let response_cookies: Arc<tokio::sync::Mutex<ResponseCookies>> =
+        Arc::new(tokio::sync::Mutex::new(ResponseCookies::default()));
+    req.extensions_mut().insert(Arc::clone(&response_cookies));
+
+    // Insert the environment
     req.extensions_mut().insert(env);
 
-    Ok(ROUTER.clone().call(req).await?)
+    // Handle the request
+    let mut response = ROUTER.clone().call(req).await?;
+
+    // Extract response cookies and add them to the response headers
+    let cookies = response_cookies.lock().await;
+    for set_cookie_value in cookies.into_headers() {
+        response.headers_mut().append(
+            http::header::SET_COOKIE,
+            set_cookie_value.parse().unwrap_or_else(|_| http::HeaderValue::from_static("")),
+        );
+    }
+
+    Ok(response)
 }
 
 static ROUTER: LazyLock<axum::Router> = LazyLock::new(|| {
@@ -44,9 +71,7 @@ static ROUTER: LazyLock<axum::Router> = LazyLock::new(|| {
             Ok(method_filter) => {
                 router = router.route(
                     path,
-                    routing::on(method_filter, move |req| {
-                        server_fn::axum::handle_server_fn(req)
-                    }),
+                    routing::on(method_filter, |req| handle_server_fn_with_cookies(req)),
                 );
             }
             Err(err) => {
@@ -83,4 +108,12 @@ async fn static_asset_or_index_html(
         .map_err(|e| (http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
     // Wrap the `worker::Body` in an `axum::body::Body`.
     Ok(response.map(axum::body::Body::new))
+}
+
+/// Handle server function with cookie support
+#[worker::send]
+async fn handle_server_fn_with_cookies(
+    req: http::Request<axum::body::Body>,
+) -> http::Response<axum::body::Body> {
+    server_fn::axum::handle_server_fn(req).await
 }
